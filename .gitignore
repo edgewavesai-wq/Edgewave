@@ -1,0 +1,5 @@
+.env 
+config.json 
+*.skill 
+__pycache__/ 
+*.pyc 
