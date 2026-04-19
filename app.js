@@ -1,346 +1,351 @@
 (() => {
-    const $ = (sel) => document.querySelector(sel);
-    const form = $('#promptForm');
-    const outputSection = $('#outputSection');
-    const promptOutput = $('#promptOutput');
-    const negativeOutput = $('#negativeOutput');
-    const negativeText = $('#negativeText');
-    const historyList = $('#historyList');
+    // ── State ──
+    let hospitals = [];
+    let leafletMap = null;
+    let drawnItems = null;
+    let pendingMeasure = null;
+    let currentIdx = null;
 
-    const STYLE_MAP = {
-        'cinematic': 'cinematic film style, anamorphic lens, shallow depth of field',
-        'photorealistic': 'photorealistic, ultra-realistic, 8K resolution',
-        'anime': 'anime style, cel-shaded, vibrant animation',
-        '3d-render': '3D rendered, CGI, Unreal Engine quality',
-        'watercolor': 'watercolor painting style, soft flowing textures',
-        'oil-painting': 'oil painting style, rich brushstrokes, textured canvas',
-        'pixel-art': 'pixel art style, retro 16-bit aesthetic',
-        'noir': 'film noir style, high contrast black and white, dramatic shadows',
-        'cyberpunk': 'cyberpunk aesthetic, neon-lit, futuristic dystopia',
-        'fantasy': 'epic fantasy style, dramatic and grand, painterly',
-        'documentary': 'documentary style, raw footage, naturalistic',
-        'stop-motion': 'stop-motion animation style, tactile, handcrafted look',
-        'vaporwave': 'vaporwave aesthetic, retro-futuristic, glitch art',
-        'minimalist': 'minimalist style, clean lines, simple composition',
-    };
+    // ── DOM ──
+    const cityInput      = document.getElementById('cityInput');
+    const searchBtn      = document.getElementById('searchBtn');
+    const searchBtnLabel = document.getElementById('searchBtnLabel');
+    const searchStatus   = document.getElementById('searchStatus');
+    const statsBar       = document.getElementById('statsBar');
+    const resultsSection = document.getElementById('resultsSection');
+    const hospitalsBody  = document.getElementById('hospitalsBody');
+    const tableTitle     = document.getElementById('tableTitle');
+    const statTotal      = document.getElementById('statTotal');
+    const statContacts   = document.getElementById('statContacts');
+    const statMeasured   = document.getElementById('statMeasured');
+    const exportBtn      = document.getElementById('exportBtn');
+    const mapModal       = document.getElementById('mapModal');
+    const modalTitle     = document.getElementById('modalTitle');
+    const closeModalBtn  = document.getElementById('closeModalBtn');
+    const measLength     = document.getElementById('measLength');
+    const measBreadth    = document.getElementById('measBreadth');
+    const measArea       = document.getElementById('measArea');
+    const clearDrawBtn   = document.getElementById('clearDrawBtn');
+    const saveMeasureBtn = document.getElementById('saveMeasureBtn');
 
-    const MOOD_MAP = {
-        'epic': 'epic and grandiose atmosphere',
-        'serene': 'serene and peaceful atmosphere',
-        'mysterious': 'mysterious and enigmatic atmosphere',
-        'dark': 'dark and ominous atmosphere',
-        'joyful': 'joyful and uplifting atmosphere',
-        'melancholic': 'melancholic and reflective atmosphere',
-        'tense': 'tense and suspenseful atmosphere',
-        'dreamy': 'dreamy and ethereal atmosphere',
-        'nostalgic': 'nostalgic and warm atmosphere',
-        'chaotic': 'chaotic and high-energy atmosphere',
-    };
-
-    const CAMERA_MAP = {
-        'slow-pan': 'slow cinematic pan',
-        'tracking-shot': 'smooth tracking shot following the subject',
-        'drone-aerial': 'sweeping drone aerial shot',
-        'dolly-zoom': 'dramatic dolly zoom (vertigo effect)',
-        'handheld': 'handheld camera with natural shake',
-        'static': 'locked-off static camera',
-        'orbit': 'orbiting 360-degree camera movement',
-        'crane': 'crane shot rising upward',
-        'first-person': 'first-person POV shot',
-        'timelapse': 'timelapse photography',
-        'slow-motion': 'slow motion capture',
-        'zoom-in': 'gradual zoom in on the subject',
-        'zoom-out': 'slow zoom out revealing the scene',
-    };
-
-    const SHOT_MAP = {
-        'wide': 'wide establishing shot',
-        'medium': 'medium shot',
-        'close-up': 'close-up shot',
-        'extreme-close-up': 'extreme close-up, macro detail',
-        'over-the-shoulder': 'over-the-shoulder shot',
-        'birds-eye': "bird's eye view from directly above",
-        'low-angle': 'low angle shot looking upward',
-        'high-angle': 'high angle shot looking downward',
-        'dutch-angle': 'tilted dutch angle for unease',
-    };
-
-    const LIGHTING_MAP = {
-        'golden-hour': 'warm golden hour sunlight',
-        'blue-hour': 'cool blue hour twilight',
-        'neon': 'vibrant neon RGB lighting',
-        'natural': 'natural daylight',
-        'studio': 'professional studio lighting',
-        'moonlight': 'soft moonlight illumination',
-        'silhouette': 'dramatic backlit silhouette',
-        'volumetric': 'volumetric light rays, god rays',
-        'candlelight': 'warm flickering candlelight',
-        'overcast': 'soft overcast diffused light',
-        'dramatic': 'dramatic chiaroscuro lighting',
-    };
-
-    const COLOR_MAP = {
-        'warm': 'warm color palette with amber, gold, and red tones',
-        'cool': 'cool color palette with blue, teal, and silver tones',
-        'muted': 'muted desaturated colors',
-        'vibrant': 'vibrant saturated colors',
-        'monochrome': 'monochrome color scheme',
-        'pastel': 'soft pastel color palette',
-        'neon-palette': 'electric neon color palette',
-        'earthy': 'natural earthy tones',
-        'high-contrast': 'high contrast color grading',
-    };
-
-    const TOOL_HINTS = {
-        'sora': 'Optimized for Sora: ',
-        'runway': 'Optimized for Runway Gen-3: ',
-        'pika': 'Optimized for Pika: ',
-        'kling': 'Optimized for Kling AI: ',
-        'minimax': 'Optimized for MiniMax/Hailuo: ',
-        'stable-video': 'Optimized for Stable Video Diffusion: ',
-        'veo': 'Optimized for Google Veo: ',
-    };
-
-    let history = JSON.parse(localStorage.getItem('vpg-history') || '[]');
-
-    function buildPrompt() {
-        const subject = $('#subject').value.trim();
-        if (!subject) return null;
-
-        const style = $('#style').value;
-        const mood = $('#mood').value;
-        const camera = $('#camera').value;
-        const shot = $('#shot').value;
-        const lighting = $('#lighting').value;
-        const setting = $('#setting').value.trim();
-        const colors = $('#colors').value;
-        const duration = $('#duration').value;
-        const ratio = $('#ratio').value;
-        const tool = $('#tool').value;
-        const details = $('#details').value.trim();
-        const negative = $('#negative').value.trim();
-
-        const parts = [];
-
-        // Tool prefix
-        if (tool && TOOL_HINTS[tool]) {
-            parts.push(TOOL_HINTS[tool]);
-        }
-
-        // Core subject
-        parts.push(subject);
-
-        // Style
-        if (style && STYLE_MAP[style]) {
-            parts.push(STYLE_MAP[style]);
-        }
-
-        // Shot type
-        if (shot && SHOT_MAP[shot]) {
-            parts.push(SHOT_MAP[shot]);
-        }
-
-        // Camera
-        if (camera && CAMERA_MAP[camera]) {
-            parts.push(CAMERA_MAP[camera]);
-        }
-
-        // Lighting
-        if (lighting && LIGHTING_MAP[lighting]) {
-            parts.push(LIGHTING_MAP[lighting]);
-        }
-
-        // Mood
-        if (mood && MOOD_MAP[mood]) {
-            parts.push(MOOD_MAP[mood]);
-        }
-
-        // Setting
-        if (setting) {
-            parts.push(`set in ${setting}`);
-        }
-
-        // Colors
-        if (colors && COLOR_MAP[colors]) {
-            parts.push(COLOR_MAP[colors]);
-        }
-
-        // Details
-        if (details) {
-            parts.push(details);
-        }
-
-        // Technical specs
-        const specs = [];
-        if (duration) specs.push(duration + ' duration');
-        if (ratio) specs.push(ratio + ' aspect ratio');
-        if (specs.length) {
-            parts.push(specs.join(', '));
-        }
-
+    // ── Geocode city via Nominatim ──
+    async function geocodeCity(city) {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1&addressdetails=0`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en-US,en' } });
+        if (!res.ok) throw new Error('Geocoding service unavailable');
+        const data = await res.json();
+        if (!data.length) throw new Error(`City "${city}" not found. Try a different spelling.`);
+        const { boundingbox, lat, lon, display_name } = data[0];
         return {
-            prompt: parts.join('. ').replace(/\.\./g, '.').replace(/\. :/g, ':'),
-            negative: negative || null,
+            bbox: {
+                south: parseFloat(boundingbox[0]),
+                north: parseFloat(boundingbox[1]),
+                west:  parseFloat(boundingbox[2]),
+                east:  parseFloat(boundingbox[3]),
+            },
+            center: { lat: parseFloat(lat), lon: parseFloat(lon) },
+            label: display_name.split(',').slice(0, 2).join(',').trim(),
         };
     }
 
-    function renderHistory() {
-        if (history.length === 0) {
-            historyList.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;">No prompts generated yet.</p>';
+    // ── Search hospitals via Overpass ──
+    async function fetchHospitals(bbox) {
+        const { south, west, north, east } = bbox;
+        const query = `[out:json][timeout:40];
+(
+  node["amenity"="hospital"](${south},${west},${north},${east});
+  way["amenity"="hospital"](${south},${west},${north},${east});
+  relation["amenity"="hospital"](${south},${west},${north},${east});
+);
+out center tags;`;
+        const res = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            body: query,
+        });
+        if (!res.ok) throw new Error('Hospital data service unavailable. Try again.');
+        const data = await res.json();
+        return data.elements || [];
+    }
+
+    // ── Parse OSM element → hospital object ──
+    function parseElement(el, idx) {
+        const t = el.tags || {};
+        const lat = el.lat ?? el.center?.lat ?? null;
+        const lon = el.lon ?? el.center?.lon ?? null;
+
+        const name = t.name || t['name:en'] || 'Unnamed Hospital';
+
+        const addrParts = [
+            t['addr:housenumber'],
+            t['addr:street'],
+            t['addr:suburb'],
+            t['addr:city'],
+        ].filter(Boolean);
+        const address = addrParts.length ? addrParts.join(', ') : (t['addr:full'] || t['addr:place'] || '');
+
+        const phone   = t.phone || t['contact:phone'] || t.telephone || '';
+        const email   = t.email || t['contact:email'] || '';
+        const website = t.website || t['contact:website'] || t.url || '';
+
+        return { idx, name, address, phone, email, website, lat, lon, length: null, breadth: null, area: null };
+    }
+
+    // ── Render table ──
+    function renderTable() {
+        hospitalsBody.innerHTML = hospitals.map((h, i) => {
+            const hasMeas = h.area != null;
+            const webCell = h.website
+                ? `<a href="${esc(h.website)}" target="_blank" rel="noopener" class="web-link">Visit &#x2197;</a>`
+                : '<span style="color:var(--text-muted)">—</span>';
+            const mapsUrl = h.lat && h.lon
+                ? `https://www.google.com/maps/@${h.lat},${h.lon},80m/data=!3m1!1e3`
+                : null;
+
+            return `<tr id="row-${i}" class="${hasMeas ? 'measured' : ''}">
+                <td class="col-num">${i + 1}</td>
+                <td class="col-name" title="${esc(h.name)}">${esc(h.name)}</td>
+                <td class="col-addr" title="${esc(h.address)}">${esc(h.address) || '<span style="color:var(--text-muted)">—</span>'}</td>
+                <td><input class="cell-input" type="tel" data-field="phone" data-idx="${i}" value="${esc(h.phone)}" placeholder="Add phone" /></td>
+                <td><input class="cell-input" type="email" data-field="email" data-idx="${i}" value="${esc(h.email)}" placeholder="Add email" /></td>
+                <td>${webCell}</td>
+                <td class="col-meas${hasMeas ? ' measured-val' : ''}" id="len-${i}">${hasMeas ? h.length.toFixed(1) : '—'}</td>
+                <td class="col-meas${hasMeas ? ' measured-val' : ''}" id="bre-${i}">${hasMeas ? h.breadth.toFixed(1) : '—'}</td>
+                <td class="col-meas${hasMeas ? ' measured-val' : ''}" id="area-${i}">${hasMeas ? h.area.toFixed(0) : '—'}</td>
+                <td class="col-actions">
+                    <button class="btn-measure ${hasMeas ? 'done' : ''}" onclick="window._openMeasure(${i})">
+                        ${hasMeas ? 'Re-measure' : 'Measure Roof'}
+                    </button>
+                    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" class="btn-gmaps" title="Open in Google Maps Satellite">Maps</a>` : ''}
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Bind inline input changes to state
+        hospitalsBody.querySelectorAll('.cell-input').forEach(input => {
+            input.addEventListener('change', e => {
+                hospitals[+e.target.dataset.idx][e.target.dataset.field] = e.target.value;
+                updateStats();
+            });
+        });
+    }
+
+    function updateStats() {
+        statTotal.textContent    = hospitals.length;
+        statContacts.textContent = hospitals.filter(h => h.phone || h.email).length;
+        statMeasured.textContent = hospitals.filter(h => h.area != null).length;
+    }
+
+    function esc(str) {
+        const d = document.createElement('div');
+        d.textContent = str || '';
+        return d.innerHTML;
+    }
+
+    function setStatus(msg, type) {
+        searchStatus.textContent = msg;
+        searchStatus.className = `status-msg status-${type}`;
+    }
+
+    // ── Search flow ──
+    searchBtn.addEventListener('click', runSearch);
+    cityInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
+    async function runSearch() {
+        const city = cityInput.value.trim();
+        if (!city) { setStatus('Please enter a city name.', 'error'); return; }
+
+        searchBtn.disabled = true;
+        searchBtnLabel.innerHTML = '<span class="spinner"></span> Searching...';
+        setStatus('Geocoding city…', 'loading');
+
+        try {
+            const cityData = await geocodeCity(city);
+            setStatus(`Located: ${cityData.label}. Fetching hospitals…`, 'loading');
+
+            const elements = await fetchHospitals(cityData.bbox);
+            const parsed = elements
+                .filter(el => el.tags?.name && (el.lat || el.center?.lat))
+                .map((el, i) => parseElement(el, i));
+
+            if (parsed.length === 0) {
+                setStatus('No named hospitals found. Try a larger city or check spelling.', 'error');
+                return;
+            }
+
+            hospitals = parsed;
+            tableTitle.textContent = `Hospitals in ${cityData.label} (${hospitals.length})`;
+            renderTable();
+            updateStats();
+            statsBar.classList.remove('hidden');
+            resultsSection.classList.remove('hidden');
+            setStatus(`Found ${hospitals.length} hospital(s) in ${cityData.label}`, 'success');
+            statsBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } catch (err) {
+            setStatus(`Error: ${err.message}`, 'error');
+        } finally {
+            searchBtn.disabled = false;
+            searchBtnLabel.textContent = 'Search Hospitals';
+        }
+    }
+
+    // ── Map measure modal ──
+    window._openMeasure = function (idx) {
+        currentIdx = idx;
+        const h = hospitals[idx];
+        if (!h.lat || !h.lon) {
+            alert('No coordinates available for this hospital. Cannot open map.');
             return;
         }
-        historyList.innerHTML = history.map((item, i) => `
-            <div class="history-item" data-index="${i}">
-                <div class="history-preview">${escapeHtml(item.prompt)}</div>
-                <span class="history-time">${item.time}</span>
-            </div>
-        `).join('');
+
+        modalTitle.textContent = h.name;
+        pendingMeasure = null;
+        resetMeasureDisplay();
+        mapModal.classList.remove('hidden');
+
+        // Destroy previous map instance
+        if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+
+        // Wait for modal to paint, then init map
+        requestAnimationFrame(() => requestAnimationFrame(() => initLeafletMap(h.lat, h.lon)));
+    };
+
+    function initLeafletMap(lat, lon) {
+        leafletMap = L.map('mapContainer', { zoomControl: true }).setView([lat, lon], 19);
+
+        // Satellite layer (Esri World Imagery – no API key required)
+        L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            { attribution: 'Imagery &copy; Esri', maxZoom: 21 }
+        ).addTo(leafletMap);
+
+        // Labels overlay
+        L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            { attribution: '', maxZoom: 21, opacity: 0.7 }
+        ).addTo(leafletMap);
+
+        // Draw layer
+        drawnItems = new L.FeatureGroup();
+        leafletMap.addLayer(drawnItems);
+
+        const drawControl = new L.Control.Draw({
+            draw: {
+                rectangle: { shapeOptions: { color: '#f59e0b', weight: 2.5, fillOpacity: 0.15 } },
+                polygon: false, polyline: false, circle: false, circlemarker: false, marker: false,
+            },
+            edit: { featureGroup: drawnItems },
+        });
+        leafletMap.addControl(drawControl);
+
+        leafletMap.on(L.Draw.Event.CREATED, e => {
+            drawnItems.clearLayers();
+            drawnItems.addLayer(e.layer);
+            applyMeasurement(e.layer);
+        });
+
+        leafletMap.on(L.Draw.Event.EDITED, e => {
+            e.layers.eachLayer(layer => applyMeasurement(layer));
+        });
+
+        leafletMap.on(L.Draw.Event.DELETED, () => resetMeasureDisplay());
     }
 
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+    function applyMeasurement(layer) {
+        const bounds = layer.getBounds();
+        const ne = bounds.getNorthEast();
+        const nw = bounds.getNorthWest();
+        const sw = bounds.getSouthWest();
+
+        const w = ne.distanceTo(nw);   // width in metres
+        const h2 = nw.distanceTo(sw);  // height in metres
+
+        const length  = Math.max(w, h2);
+        const breadth = Math.min(w, h2);
+        const area    = w * h2;
+
+        measLength.textContent  = length.toFixed(1);
+        measBreadth.textContent = breadth.toFixed(1);
+        measArea.textContent    = area.toFixed(0);
+        pendingMeasure = { length, breadth, area };
     }
 
-    function showToast(msg) {
-        let toast = $('.toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.className = 'toast';
-            document.body.appendChild(toast);
+    function resetMeasureDisplay() {
+        measLength.textContent  = '—';
+        measBreadth.textContent = '—';
+        measArea.textContent    = '—';
+        pendingMeasure = null;
+    }
+
+    clearDrawBtn.addEventListener('click', () => {
+        if (drawnItems) drawnItems.clearLayers();
+        resetMeasureDisplay();
+    });
+
+    saveMeasureBtn.addEventListener('click', () => {
+        if (!pendingMeasure) {
+            alert('Draw a rectangle on the rooftop first, then save.');
+            return;
         }
-        toast.textContent = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
-    }
+        const { length, breadth, area } = pendingMeasure;
+        hospitals[currentIdx].length  = length;
+        hospitals[currentIdx].breadth = breadth;
+        hospitals[currentIdx].area    = area;
 
-    async function copyText(text, btn) {
-        try {
-            await navigator.clipboard.writeText(text);
-            btn.classList.add('copied');
-            btn.innerHTML = '<span class="copy-icon">&#10003;</span> Copied!';
-            showToast('Copied to clipboard');
-            setTimeout(() => {
-                btn.classList.remove('copied');
-                btn.innerHTML = '<span class="copy-icon">&#128203;</span> Copy';
-            }, 2000);
-        } catch {
-            showToast('Failed to copy');
+        // Update row in table
+        const row = document.getElementById(`row-${currentIdx}`);
+        if (row) {
+            row.classList.add('measured');
+            document.getElementById(`len-${currentIdx}`).textContent  = length.toFixed(1);
+            document.getElementById(`len-${currentIdx}`).className    = 'col-meas measured-val';
+            document.getElementById(`bre-${currentIdx}`).textContent  = breadth.toFixed(1);
+            document.getElementById(`bre-${currentIdx}`).className    = 'col-meas measured-val';
+            document.getElementById(`area-${currentIdx}`).textContent = area.toFixed(0);
+            document.getElementById(`area-${currentIdx}`).className   = 'col-meas measured-val';
+            const btn = row.querySelector('.btn-measure');
+            if (btn) { btn.textContent = 'Re-measure'; btn.classList.add('done'); }
         }
+
+        updateStats();
+        closeMap();
+    });
+
+    function closeMap() {
+        mapModal.classList.add('hidden');
+        if (leafletMap) { leafletMap.remove(); leafletMap = null; }
     }
 
-    function randomize() {
-        const subjects = [
-            'A dragon soaring over a medieval castle at sunset',
-            'A cybernetic wolf running through a neon-lit city',
-            'An astronaut floating in space with Earth in the background',
-            'A samurai meditating under cherry blossoms in the rain',
-            'A deep sea creature glowing in the abyss',
-            'A time traveler stepping through a shimmering portal',
-            'A giant robot emerging from the ocean during a storm',
-            'A fox walking through an enchanted glowing forest',
-            'A vintage car driving down an endless desert highway',
-            'A ballerina dancing on a frozen lake under the aurora borealis',
-            'A steampunk airship sailing through thunderclouds',
-            'A lone figure walking through an abandoned neon arcade',
+    closeModalBtn.addEventListener('click', closeMap);
+    document.querySelector('.modal-backdrop').addEventListener('click', closeMap);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMap(); });
+
+    // ── Excel Export ──
+    exportBtn.addEventListener('click', () => {
+        if (!hospitals.length) return;
+        const city = cityInput.value.trim() || 'city';
+
+        const rows = hospitals.map((h, i) => ({
+            '#':               i + 1,
+            'Hospital Name':   h.name,
+            'Address':         h.address || '',
+            'Phone':           h.phone   || '',
+            'Email':           h.email   || '',
+            'Website':         h.website || '',
+            'Roof Length (m)': h.length  != null ? +h.length.toFixed(2)  : '',
+            'Roof Breadth (m)':h.breadth != null ? +h.breadth.toFixed(2) : '',
+            'Roof Area (m²)':  h.area    != null ? +h.area.toFixed(2)    : '',
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [
+            { wch: 4 }, { wch: 38 }, { wch: 32 }, { wch: 18 },
+            { wch: 30 }, { wch: 32 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
         ];
 
-        function randomOption(select) {
-            const options = select.querySelectorAll('option');
-            const nonEmpty = Array.from(options).filter(o => o.value);
-            if (nonEmpty.length) {
-                const pick = nonEmpty[Math.floor(Math.random() * nonEmpty.length)];
-                select.value = pick.value;
-            }
-        }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Hospital Leads');
 
-        $('#subject').value = subjects[Math.floor(Math.random() * subjects.length)];
-        randomOption($('#style'));
-        randomOption($('#mood'));
-        randomOption($('#camera'));
-        randomOption($('#shot'));
-        randomOption($('#lighting'));
-        randomOption($('#colors'));
-        randomOption($('#duration'));
-        randomOption($('#ratio'));
-
-        $('#setting').value = '';
-        $('#details').value = '';
-        $('#negative').value = '';
-    }
-
-    // Event listeners
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const result = buildPrompt();
-        if (!result) {
-            showToast('Please enter a subject');
-            return;
-        }
-
-        promptOutput.textContent = result.prompt;
-        outputSection.classList.remove('hidden');
-
-        if (result.negative) {
-            negativeText.textContent = result.negative;
-            negativeOutput.style.display = 'block';
-        } else {
-            negativeOutput.style.display = 'none';
-        }
-
-        // Save to history
-        const now = new Date();
-        const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        history.unshift({ prompt: result.prompt, negative: result.negative, time });
-        if (history.length > 20) history.pop();
-        localStorage.setItem('vpg-history', JSON.stringify(history));
-        renderHistory();
-
-        outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const slug = city.toLowerCase().replace(/\s+/g, '-');
+        XLSX.writeFile(wb, `solar-outreach-${slug}.xlsx`);
     });
-
-    $('#copyBtn').addEventListener('click', () => {
-        copyText(promptOutput.textContent, $('#copyBtn'));
-    });
-
-    $('#copyNegBtn').addEventListener('click', () => {
-        copyText(negativeText.textContent, $('#copyNegBtn'));
-    });
-
-    $('#randomBtn').addEventListener('click', randomize);
-
-    $('#clearBtn').addEventListener('click', () => {
-        outputSection.classList.add('hidden');
-    });
-
-    $('#clearHistoryBtn').addEventListener('click', () => {
-        history = [];
-        localStorage.removeItem('vpg-history');
-        renderHistory();
-        showToast('History cleared');
-    });
-
-    historyList.addEventListener('click', (e) => {
-        const item = e.target.closest('.history-item');
-        if (!item) return;
-        const idx = parseInt(item.dataset.index);
-        const entry = history[idx];
-        if (!entry) return;
-
-        promptOutput.textContent = entry.prompt;
-        outputSection.classList.remove('hidden');
-
-        if (entry.negative) {
-            negativeText.textContent = entry.negative;
-            negativeOutput.style.display = 'block';
-        } else {
-            negativeOutput.style.display = 'none';
-        }
-
-        outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
-    // Init
-    renderHistory();
 })();
