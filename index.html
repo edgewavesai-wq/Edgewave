@@ -3,247 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Prompt Generator</title>
+    <title>Solar Panel Outreach Automation</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Video Prompt Generator</h1>
-            <p class="subtitle">Create detailed, cinematic prompts for AI video generation tools</p>
+
+<header>
+    <div class="container">
+        <div class="logo-row">
+            <svg class="solar-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="16" width="32" height="18" rx="2" fill="#f59e0b" opacity="0.9"/>
+                <line x1="16" y1="16" x2="16" y2="34" stroke="#0d1117" stroke-width="1.5"/>
+                <line x1="24" y1="16" x2="24" y2="34" stroke="#0d1117" stroke-width="1.5"/>
+                <line x1="32" y1="16" x2="32" y2="34" stroke="#0d1117" stroke-width="1.5"/>
+                <line x1="8" y1="22" x2="40" y2="22" stroke="#0d1117" stroke-width="1.5"/>
+                <line x1="8" y1="28" x2="40" y2="28" stroke="#0d1117" stroke-width="1.5"/>
+                <line x1="24" y1="34" x2="24" y2="40" stroke="#f59e0b" stroke-width="2"/>
+                <line x1="18" y1="40" x2="30" y2="40" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="24" cy="8" r="3" fill="#fcd34d"/>
+                <line x1="24" y1="1" x2="24" y2="4" stroke="#fcd34d" stroke-width="1.5"/>
+                <line x1="24" y1="12" x2="24" y2="14" stroke="#fcd34d" stroke-width="1.5"/>
+                <line x1="17" y1="3" x2="18.5" y2="5.5" stroke="#fcd34d" stroke-width="1.5"/>
+                <line x1="31" y1="3" x2="29.5" y2="5.5" stroke="#fcd34d" stroke-width="1.5"/>
+                <line x1="13" y1="8" x2="16" y2="8" stroke="#fcd34d" stroke-width="1.5"/>
+                <line x1="32" y1="8" x2="35" y2="8" stroke="#fcd34d" stroke-width="1.5"/>
+            </svg>
+            <div>
+                <h1>Solar Panel Outreach</h1>
+                <p class="subtitle">Find hospitals &bull; Get contacts &bull; Measure rooftops &bull; Export leads</p>
+            </div>
         </div>
-    </header>
+    </div>
+</header>
 
-    <main class="container">
-        <form id="promptForm">
-            <div class="form-grid">
-                <!-- Subject -->
-                <div class="form-group full-width">
-                    <label for="subject">Subject / Main Idea <span class="required">*</span></label>
-                    <input type="text" id="subject" placeholder="e.g. A lone astronaut walking on Mars" required>
-                </div>
+<main class="container">
 
-                <!-- Visual Style -->
-                <div class="form-group">
-                    <label for="style">Visual Style</label>
-                    <select id="style">
-                        <option value="">— Select —</option>
-                        <option value="cinematic">Cinematic</option>
-                        <option value="photorealistic">Photorealistic</option>
-                        <option value="anime">Anime</option>
-                        <option value="3d-render">3D Render</option>
-                        <option value="watercolor">Watercolor</option>
-                        <option value="oil-painting">Oil Painting</option>
-                        <option value="pixel-art">Pixel Art</option>
-                        <option value="noir">Film Noir</option>
-                        <option value="cyberpunk">Cyberpunk</option>
-                        <option value="fantasy">Fantasy / Epic</option>
-                        <option value="documentary">Documentary</option>
-                        <option value="stop-motion">Stop Motion</option>
-                        <option value="vaporwave">Vaporwave</option>
-                        <option value="minimalist">Minimalist</option>
-                    </select>
-                </div>
-
-                <!-- Mood -->
-                <div class="form-group">
-                    <label for="mood">Mood / Atmosphere</label>
-                    <select id="mood">
-                        <option value="">— Select —</option>
-                        <option value="epic">Epic</option>
-                        <option value="serene">Serene / Calm</option>
-                        <option value="mysterious">Mysterious</option>
-                        <option value="dark">Dark / Ominous</option>
-                        <option value="joyful">Joyful / Uplifting</option>
-                        <option value="melancholic">Melancholic</option>
-                        <option value="tense">Tense / Suspenseful</option>
-                        <option value="dreamy">Dreamy / Ethereal</option>
-                        <option value="nostalgic">Nostalgic</option>
-                        <option value="chaotic">Chaotic / Energetic</option>
-                    </select>
-                </div>
-
-                <!-- Camera Movement -->
-                <div class="form-group">
-                    <label for="camera">Camera Movement</label>
-                    <select id="camera">
-                        <option value="">— Select —</option>
-                        <option value="slow-pan">Slow Pan</option>
-                        <option value="tracking-shot">Tracking Shot</option>
-                        <option value="drone-aerial">Drone / Aerial</option>
-                        <option value="dolly-zoom">Dolly Zoom</option>
-                        <option value="handheld">Handheld / Shaky</option>
-                        <option value="static">Static / Locked</option>
-                        <option value="orbit">Orbit / 360</option>
-                        <option value="crane">Crane Shot</option>
-                        <option value="first-person">First Person / POV</option>
-                        <option value="timelapse">Timelapse</option>
-                        <option value="slow-motion">Slow Motion</option>
-                        <option value="zoom-in">Zoom In</option>
-                        <option value="zoom-out">Zoom Out</option>
-                    </select>
-                </div>
-
-                <!-- Shot Type -->
-                <div class="form-group">
-                    <label for="shot">Shot Type</label>
-                    <select id="shot">
-                        <option value="">— Select —</option>
-                        <option value="wide">Wide / Establishing</option>
-                        <option value="medium">Medium Shot</option>
-                        <option value="close-up">Close-Up</option>
-                        <option value="extreme-close-up">Extreme Close-Up</option>
-                        <option value="over-the-shoulder">Over the Shoulder</option>
-                        <option value="birds-eye">Bird's Eye View</option>
-                        <option value="low-angle">Low Angle</option>
-                        <option value="high-angle">High Angle</option>
-                        <option value="dutch-angle">Dutch Angle</option>
-                    </select>
-                </div>
-
-                <!-- Lighting -->
-                <div class="form-group">
-                    <label for="lighting">Lighting</label>
-                    <select id="lighting">
-                        <option value="">— Select —</option>
-                        <option value="golden-hour">Golden Hour</option>
-                        <option value="blue-hour">Blue Hour</option>
-                        <option value="neon">Neon / RGB</option>
-                        <option value="natural">Natural Daylight</option>
-                        <option value="studio">Studio Lighting</option>
-                        <option value="moonlight">Moonlight</option>
-                        <option value="silhouette">Silhouette / Backlit</option>
-                        <option value="volumetric">Volumetric / God Rays</option>
-                        <option value="candlelight">Candlelight / Warm</option>
-                        <option value="overcast">Overcast / Diffused</option>
-                        <option value="dramatic">Dramatic Chiaroscuro</option>
-                    </select>
-                </div>
-
-                <!-- Setting / Environment -->
-                <div class="form-group">
-                    <label for="setting">Setting / Environment</label>
-                    <input type="text" id="setting" placeholder="e.g. Futuristic city at night, dense forest">
-                </div>
-
-                <!-- Color Palette -->
-                <div class="form-group">
-                    <label for="colors">Color Palette</label>
-                    <select id="colors">
-                        <option value="">— Select —</option>
-                        <option value="warm">Warm Tones (amber, gold, red)</option>
-                        <option value="cool">Cool Tones (blue, teal, silver)</option>
-                        <option value="muted">Muted / Desaturated</option>
-                        <option value="vibrant">Vibrant / Saturated</option>
-                        <option value="monochrome">Monochrome</option>
-                        <option value="pastel">Pastel</option>
-                        <option value="neon-palette">Neon / Electric</option>
-                        <option value="earthy">Earthy / Natural</option>
-                        <option value="high-contrast">High Contrast</option>
-                    </select>
-                </div>
-
-                <!-- Duration -->
-                <div class="form-group">
-                    <label for="duration">Duration</label>
-                    <select id="duration">
-                        <option value="">— Select —</option>
-                        <option value="3s">3 seconds</option>
-                        <option value="5s">5 seconds</option>
-                        <option value="10s">10 seconds</option>
-                        <option value="15s">15 seconds</option>
-                        <option value="30s">30 seconds</option>
-                        <option value="60s">60 seconds</option>
-                    </select>
-                </div>
-
-                <!-- Aspect Ratio -->
-                <div class="form-group">
-                    <label for="ratio">Aspect Ratio</label>
-                    <select id="ratio">
-                        <option value="">— Select —</option>
-                        <option value="16:9">16:9 (Widescreen)</option>
-                        <option value="9:16">9:16 (Vertical / Mobile)</option>
-                        <option value="1:1">1:1 (Square)</option>
-                        <option value="21:9">21:9 (Ultra-wide / Cinematic)</option>
-                        <option value="4:3">4:3 (Classic)</option>
-                    </select>
-                </div>
-
-                <!-- AI Tool Target -->
-                <div class="form-group">
-                    <label for="tool">Target AI Tool</label>
-                    <select id="tool">
-                        <option value="">— General —</option>
-                        <option value="sora">Sora (OpenAI)</option>
-                        <option value="runway">Runway Gen-3</option>
-                        <option value="pika">Pika Labs</option>
-                        <option value="kling">Kling AI</option>
-                        <option value="minimax">MiniMax (Hailuo)</option>
-                        <option value="stable-video">Stable Video Diffusion</option>
-                        <option value="veo">Google Veo</option>
-                    </select>
-                </div>
-
-                <!-- Extra Details -->
-                <div class="form-group full-width">
-                    <label for="details">Additional Details</label>
-                    <textarea id="details" rows="3" placeholder="Any extra details: specific actions, text overlays, transitions, effects..."></textarea>
-                </div>
-
-                <!-- Negative Prompt -->
-                <div class="form-group full-width">
-                    <label for="negative">Negative Prompt <span class="optional">(what to avoid)</span></label>
-                    <textarea id="negative" rows="2" placeholder="e.g. blurry, distorted faces, text artifacts, watermark"></textarea>
-                </div>
-            </div>
-
-            <div class="actions">
-                <button type="submit" class="btn-primary" id="generateBtn">Generate Prompt</button>
-                <button type="button" class="btn-secondary" id="randomBtn">Randomize</button>
-                <button type="reset" class="btn-outline" id="clearBtn">Clear All</button>
-            </div>
-        </form>
-
-        <!-- Output -->
-        <section id="outputSection" class="output-section hidden">
-            <h2>Your Generated Prompt</h2>
-            <div class="output-card">
-                <div id="promptOutput" class="prompt-text"></div>
-                <div class="output-actions">
-                    <button class="btn-copy" id="copyBtn" title="Copy to clipboard">
-                        <span class="copy-icon">&#128203;</span> Copy
-                    </button>
-                </div>
-            </div>
-
-            <div class="output-card negative-card" id="negativeOutput" style="display:none">
-                <h3>Negative Prompt</h3>
-                <div id="negativeText" class="prompt-text"></div>
-                <div class="output-actions">
-                    <button class="btn-copy" id="copyNegBtn" title="Copy negative prompt">
-                        <span class="copy-icon">&#128203;</span> Copy
-                    </button>
-                </div>
-            </div>
-
-            <!-- Prompt History -->
-            <div class="history-section">
-                <div class="history-header">
-                    <h3>Prompt History</h3>
-                    <button class="btn-outline btn-sm" id="clearHistoryBtn">Clear History</button>
-                </div>
-                <div id="historyList" class="history-list"></div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>Video Prompt Generator &mdash; Craft the perfect prompt for AI video tools.</p>
+    <!-- Step 1: Search -->
+    <section class="card search-card">
+        <div class="step-label">Step 1 &mdash; Select City</div>
+        <div class="search-row">
+            <input type="text" id="cityInput" placeholder="Enter city name (e.g. Chennai, Mumbai, Delhi)" autocomplete="off" />
+            <button id="searchBtn" class="btn-primary">
+                <span id="searchBtnLabel">Search Hospitals</span>
+            </button>
         </div>
-    </footer>
+        <div id="searchStatus" class="status-msg"></div>
+    </section>
 
-    <script src="app.js"></script>
+    <!-- Stats Bar -->
+    <div id="statsBar" class="stats-bar hidden">
+        <div class="stat">
+            <span class="stat-num" id="statTotal">0</span>
+            <span class="stat-label">Hospitals Found</span>
+        </div>
+        <div class="stat">
+            <span class="stat-num" id="statContacts">0</span>
+            <span class="stat-label">Contacts Available</span>
+        </div>
+        <div class="stat">
+            <span class="stat-num" id="statMeasured">0</span>
+            <span class="stat-label">Roofs Measured</span>
+        </div>
+        <div class="stat-action">
+            <button id="exportBtn" class="btn-export">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 12L3 7h3V2h4v5h3L8 12zM2 14h12v-1.5H2V14z"/>
+                </svg>
+                Export to Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <section id="resultsSection" class="hidden">
+        <div class="table-header-row">
+            <h2 id="tableTitle">Hospitals</h2>
+            <span class="table-hint">Click <strong>Measure Roof</strong> on any row to draw a rectangle on the satellite map</span>
+        </div>
+        <div class="table-wrapper">
+            <table id="hospitalsTable">
+                <thead>
+                    <tr>
+                        <th class="th-num">#</th>
+                        <th class="th-name">Hospital Name</th>
+                        <th class="th-addr">Address</th>
+                        <th class="th-phone">Phone</th>
+                        <th class="th-email">Email</th>
+                        <th class="th-web">Website</th>
+                        <th class="th-meas">Length&nbsp;(m)</th>
+                        <th class="th-meas">Breadth&nbsp;(m)</th>
+                        <th class="th-meas">Area&nbsp;(m²)</th>
+                        <th class="th-act">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="hospitalsBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<!-- Map Measure Modal -->
+<div id="mapModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3 id="modalTitle">Measure Rooftop</h3>
+                <p class="modal-sub">Use the rectangle tool <strong>&#9635;</strong> to draw over the rooftop on the satellite view</p>
+            </div>
+            <button id="closeModalBtn" class="btn-icon-close" aria-label="Close">&times;</button>
+        </div>
+        <div id="mapContainer"></div>
+        <div class="measure-panel">
+            <div class="measure-values">
+                <div class="m-val">
+                    <span class="m-label">Length</span>
+                    <span class="m-num" id="measLength">—</span>
+                    <span class="m-unit">m</span>
+                </div>
+                <div class="m-sep">&times;</div>
+                <div class="m-val">
+                    <span class="m-label">Breadth</span>
+                    <span class="m-num" id="measBreadth">—</span>
+                    <span class="m-unit">m</span>
+                </div>
+                <div class="m-sep">=</div>
+                <div class="m-val m-val-area">
+                    <span class="m-label">Roof Area</span>
+                    <span class="m-num" id="measArea">—</span>
+                    <span class="m-unit">m²</span>
+                </div>
+            </div>
+            <div class="measure-actions">
+                <button id="clearDrawBtn" class="btn-secondary">Clear Drawing</button>
+                <button id="saveMeasureBtn" class="btn-primary">Save &amp; Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="container">
+        <p>Solar Panel Outreach Automation &mdash; Hospital data via OpenStreetMap &bull; Satellite imagery via Esri</p>
+    </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
